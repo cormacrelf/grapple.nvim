@@ -32,7 +32,7 @@ function H.without_id(rows)
     end, rows)
 end
 
-describe("json_tbl", function()
+describe("tblite_tbl", function()
     describe("#parse_schema", function()
         local good_test_cases = {
             {
