@@ -177,7 +177,7 @@ function Table:valid(row)
 
     for name, _ in pairs(row) do
         if not self.schema[name] then
-            return false, ("field '%s' is invalid"):format(name)
+            return false, ("field '%s' is not part of the schema"):format(name)
         end
     end
 
@@ -340,7 +340,7 @@ end
 ---@return boolean
 function Table:update(specs)
     if not specs or not specs.set then
-        error("update requires a 'spec.set' field to be present")
+        error("update requires 'spec.set' to be present")
     end
     if specs.set[self.primary] then
         error("cannot update the primary key of a row")
