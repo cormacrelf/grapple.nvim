@@ -242,7 +242,7 @@ describe("json_tbl", function()
                 schema = H.schema_with_id({ di = { type = "number" } }),
                 input = { a = 1, di = 4 },
                 valid = false,
-                reason = "field 'a' is invalid",
+                reason = "field 'a' is not part of the schema",
             },
         }
 
@@ -639,12 +639,12 @@ describe("json_tbl", function()
             {
                 desc = "nil-spec",
                 specs = nil,
-                error = "update requires a 'spec.set' field to be present",
+                error = "update requires 'spec.set' to be present",
             },
             {
                 desc = "empty-spec",
                 specs = {},
-                error = "update requires a 'spec.set' field to be present",
+                error = "update requires 'spec.set' to be present",
             },
             {
                 desc = "primary-spec",
