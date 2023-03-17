@@ -1,4 +1,4 @@
-local json_tbl = require("grapple.json.tbl")
+local tblite_tbl = require("tblite.tbl")
 
 local H = {}
 
@@ -23,7 +23,7 @@ function H.parsed_with_id(parsed)
 end
 
 function H.table_with_rows(rows)
-    local tbl = json_tbl.new("", {
+    local tbl = tblite_tbl.new("", {
         id = { type = "number", primary = true },
         name = { type = "text", unique = true, required = true },
         age = { type = "integer", default = 0 },
@@ -125,7 +125,7 @@ describe("json_tbl", function()
 
         for _, tc in ipairs(good_test_cases) do
             it(("parses a %s schema"):format(tc.desc), function()
-                assert.are.same(tc.parsed, json_tbl.parse_schema(tc.schema))
+                assert.are.same(tc.parsed, tblite_tbl.parse_schema(tc.schema))
             end)
         end
 
@@ -178,7 +178,7 @@ describe("json_tbl", function()
         for _, tc in ipairs(bad_test_cases) do
             it(("fails to parse a %s schema"):format(tc.desc), function()
                 -- stylua: ignore
-                assert.error(function() json_tbl.parse_schema(tc.schema) end, tc.error)
+                assert.error(function() tblite_tbl.parse_schema(tc.schema) end, tc.error)
             end)
         end
     end)
@@ -262,7 +262,7 @@ describe("json_tbl", function()
 
         for _, tc in ipairs(test_cases) do
             it(("checks a %s row"):format(tc.desc), function()
-                local ok, reason = json_tbl.new("", tc.schema):valid(tc.input)
+                local ok, reason = tblite_tbl.new("", tc.schema):valid(tc.input)
                 assert.equals(tc.valid, ok)
                 assert.equals(tc.reason, reason)
             end)
