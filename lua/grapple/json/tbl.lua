@@ -195,9 +195,9 @@ function Table:unique(row)
     return true
 end
 
----@param rows any
----@param force boolean
----@return table[] inserted_rows
+---@param rows any[]
+---@param force boolean skip valid and unique checks
+---@return any[] inserted_rows
 function Table:insert(rows, force)
     if vim.tbl_isempty(rows or {}) then
         return {}
@@ -238,11 +238,14 @@ function Table:insert(rows, force)
     return new_rows
 end
 
+---@param rows any[]
+---@return any[] inserted_rows
 function Table:seed(rows)
-    self:insert(rows, true)
+    return self:insert(rows, true)
 end
 
--- Supports 'where' and 'contains' (for tables only)
+---@param spec { where?: table, contains?: table }
+---@return any[]
 function Table:select(spec)
     if vim.tbl_isempty(spec or {}) then
         return vim.tbl_values(self.entries)
@@ -295,10 +298,15 @@ function Table:select(spec)
     end, vim.tbl_values(self.entries))
 end
 
+---Compatibility: alias of 'tblite.Table.select'
+---@param spec { where?: table, contains?: table }
+---@return any[]
 function Table:get(spec)
     return self:select(spec)
 end
 
+---@param where table?
+---@return boolean
 function Table:delete(where)
     if vim.tbl_isempty(where or {}) then
         return self:clear()
@@ -321,10 +329,15 @@ function Table:delete(where)
     return not vim.tbl_isempty(rows)
 end
 
+---Compatibility: alias of 'tblite.Table.delete'
+---@param where table?
+---@return boolean
 function Table:remove(where)
     return self:delete(where)
 end
 
+---@param specs { where?: table, set: table }
+---@return boolean
 function Table:update(specs)
     if not specs or not specs.set then
         error("update requires a 'spec.set' field to be present")
