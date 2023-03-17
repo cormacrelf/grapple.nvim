@@ -573,8 +573,7 @@ describe("json_tbl", function()
                     { name = "cob", age = 50 },
                 })
                 local rows = tbl:select()
-                -- assert.is_false(tbl:delete(tc.where))
-                tbl:delete(tc.where)
+                assert.is_false(tbl:delete(tc.where))
                 assert.are.same(rows, H.without_id(tbl:select()))
             end)
         end
