@@ -196,9 +196,8 @@ function Table:unique(row)
 end
 
 ---@param rows any[]
----@param force boolean skip valid and unique checks
 ---@return any[] inserted_rows
-function Table:insert(rows, force)
+function Table:insert(rows)
     if vim.tbl_isempty(rows or {}) then
         return {}
     end
@@ -210,10 +209,10 @@ function Table:insert(rows, force)
 
     for _, row in ipairs(vim.deepcopy(rows)) do
         local valid, reason = self:valid(row)
-        if not force and not valid then
+        if not valid then
             error(("row is not valid '%s': %s"):format(Util.inline_inspect(row), reason))
         end
-        if not force and not self:unique(row) then
+        if not self:unique(row) then
             error(("row is not unique '%s'"):format(Util.inline_inspect(row)))
         end
 
@@ -236,12 +235,6 @@ function Table:insert(rows, force)
     end
 
     return new_rows
-end
-
----@param rows any[]
----@return any[] inserted_rows
-function Table:seed(rows)
-    return self:insert(rows, true)
 end
 
 ---@param spec { where?: table, contains?: table }

@@ -21,7 +21,7 @@ function H.table_with_rows(rows)
         age = { type = "integer", default = 0 },
         labels = { type = "table" },
     })
-    tbl:insert(rows, true)
+    tbl:insert(rows)
     return tbl
 end
 
