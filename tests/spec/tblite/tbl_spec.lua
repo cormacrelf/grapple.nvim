@@ -2,14 +2,6 @@ local tblite_tbl = require("tblite.tbl")
 
 local H = {}
 
--- stylua: ignore
-function H.sorted(tbl, by)
-    tbl = vim.deepcopy(tbl)
-    by = by or "name"
-    table.sort(tbl, function(a, b) return a[by] < b[by] end)
-    return tbl
-end
-
 function H.schema_with_id(schema)
     return vim.tbl_extend("force", {
         id = { type = "number", primary = true },
@@ -29,21 +21,15 @@ function H.table_with_rows(rows)
         age = { type = "integer", default = 0 },
         labels = { type = "table" },
     })
-    tbl:seed(rows)
+    tbl:insert(rows, true)
     return tbl
 end
 
-function H.rows_without_id(rows)
+function H.without_id(rows)
     return vim.tbl_map(function(row)
         row.id = nil
         return row
     end, rows)
-end
-
-function H.lazy(func)
-    return function(...)
-        return func(...)
-    end
 end
 
 describe("json_tbl", function()
@@ -348,7 +334,7 @@ describe("json_tbl", function()
         for _, tc in ipairs(good_test_cases) do
             it(("inserts a %s row"):format(tc.desc), function()
                 local tbl = H.table_with_rows()
-                assert.are.same(tc.inserted, H.rows_without_id(tbl:insert(tc.rows)))
+                assert.are.same(tc.inserted, H.without_id(tbl:insert(tc.rows)))
 
                 -- stylua: ignore
                 local count = vim.tbl_count(tc.rows or {}) == 0 and 0
@@ -466,7 +452,7 @@ describe("json_tbl", function()
 
         for _, tc in ipairs(test_cases) do
             it(("looks for %s rows"):format(tc.desc), function()
-                assert.are.same(tc.expected, H.rows_without_id(tbl:select(tc.spec)))
+                assert.are.same(tc.expected, H.without_id(tbl:select(tc.spec)))
             end)
         end
     end)
@@ -544,7 +530,7 @@ describe("json_tbl", function()
                     { name = "cob", age = 50 },
                 })
                 assert.is_true(tbl:delete(tc.where))
-                assert.are.same(tc.after, H.rows_without_id(tbl:select()))
+                assert.are.same(tc.after, H.without_id(tbl:select()))
             end)
         end
 
@@ -589,7 +575,7 @@ describe("json_tbl", function()
                 local rows = tbl:select()
                 -- assert.is_false(tbl:delete(tc.where))
                 tbl:delete(tc.where)
-                assert.are.same(rows, H.rows_without_id(tbl:select()))
+                assert.are.same(rows, H.without_id(tbl:select()))
             end)
         end
     end)
@@ -645,7 +631,7 @@ describe("json_tbl", function()
                 })
                 local where = vim.tbl_extend("force", tc.specs.where or {}, tc.specs.set)
                 assert.is_true(tbl:update(tc.specs))
-                assert.are.same(tc.after, H.rows_without_id(tbl:select({ where = where })))
+                assert.are.same(tc.after, H.without_id(tbl:select({ where = where })))
             end)
         end
 
