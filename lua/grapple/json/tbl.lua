@@ -1,12 +1,20 @@
 local Util = require("grapple.util")
 
----@class Grapple.Table
+---@class tblite.Table
+---@field name string
+---@field schema tblite.Schema
+---@field last_id integer
+---@field index table<tblite.FieldName, string[]>
+---@field primary string
+---@field entries table
 local Table = {}
 Table.__index = Table
 
-function Table.new(tbl_name, schema, db)
+---@param tbl_name string
+---@param schema tblite.Schema
+---@return tblite.Table
+function Table.new(tbl_name, schema)
     local tbl = {
-        db = db,
         name = tbl_name,
         schema = Table.parse_schema(schema),
         last_id = 0,
@@ -22,46 +30,71 @@ function Table.new(tbl_name, schema, db)
     return tbl
 end
 
-function Table.parse_schema(schema)
+---@alias tblite.FieldName string
+
+---@enum tblite.FieldType
+local FIELD_TYPES = {
+    number = "number",
+    integer = "number",
+    string = "string",
+    text = "string",
+    table = "table",
+}
+
+---@class tblite.FieldAttributes
+---@field name tblite.FieldName
+---@field type tblite.FieldType
+---@field primary boolean mutually exclusive with 'unique'
+---@field unique boolean mutually exclusive with 'primary'
+---@field required boolean
+---@field default? any
+---@field reference? { tbl: string, field: tblite.FieldName }
+
+---@alias tblite.Schema table<tblite.FieldName, tblite.FieldAttributes>
+
+---@param input_schema table<tblite.FieldName, tblite.FieldAttributes | tblite.FieldType | boolean>
+---@return tblite.Schema parsed_schema
+function Table.parse_schema(input_schema)
     local parsed_schema = {}
     local primary_field = nil
 
-    local function parse_type(type)
-        local type_lookup = {
-            number = "number",
-            integer = "number",
-            string = "string",
-            text = "string",
-            table = "table",
-        }
-        return type_lookup[type]
-    end
-
     local function parse_reference(reference)
-        if reference then
-            local parts = vim.split(reference, ".", { plain = true })
-            return { tbl = parts[1], field = parts[2] }
-        end
+        local parts = vim.split(reference, ".", { plain = true })
+        return { tbl = parts[1], field = parts[2] }
     end
 
-    -- stylua: ignore
-    local function parse_unique(unique, primary)
-        if unique and not primary then return true end
-    end
-
-    for field, attributes in pairs(vim.deepcopy(schema)) do
+    local function parse_field(name, attributes)
         -- TODO: allow attributes of the form:
         -- attributes = true (for primary key)
         -- attributes = "number" (for basic types)
+        if attributes == true then
+            attributes = { type = "number", primary = true, required = true }
+        elseif type(attributes) ~= "table" then
+            attributes = { type = attributes }
+        end
 
-        attributes.name = field
-        attributes.type = parse_type(attributes.type)
-        attributes.primary = attributes.primary
-        attributes.required = attributes.required or attributes.primary
-        attributes.unique = parse_unique(attributes.unique, attributes.primary)
-        attributes.reference = parse_reference(attributes.reference)
-        attributes.default = attributes.default
+        return {
+            name = name,
+            type = FIELD_TYPES[attributes.type],
+            primary = attributes.primary,
+            unique = not attributes.primary and attributes.unique or nil,
+            required = attributes.required or attributes.primary or nil,
+            default = attributes.default or nil,
+            reference = attributes.reference and parse_reference(attributes.reference) or nil,
+        }
+    end
 
+    ---@param attributes tblite.FieldAttributes
+    local function validate_field(attributes)
+        if not attributes.name then
+            error("field name must be a string")
+        end
+        if not attributes.type then
+            error(("missing type for field '%s'"):format(attributes.name))
+        end
+        if attributes.default and type(attributes.default) ~= attributes.type then
+            error(("incorrect default value type for field '%s'"):format(attributes.name))
+        end
         if attributes.primary and primary_field then
             error("found more than one primary field in schema")
         end
@@ -71,20 +104,13 @@ function Table.parse_schema(schema)
         if attributes.unique and attributes.default then
             error(("unique field '%s' cannot have a default value"):format(attributes.name))
         end
+    end
 
-        primary_field = attributes.primary and attributes.name or primary_field
-
-        assert(type(attributes.name) == "string", "field name must be a string")
-        assert(attributes.type, ("missing type for field '%s'"):format(attributes.name))
-
-        if attributes.default then
-            assert(
-                type(attributes.default) == attributes.type,
-                ("incorrect default value type for field '%s'"):format(attributes.name)
-            )
-        end
-
-        parsed_schema[field] = attributes
+    for name, attributes in pairs(input_schema) do
+        local parsed = parse_field(name, attributes)
+        validate_field(parsed)
+        primary_field = parsed.primary and parsed.name or primary_field
+        parsed_schema[parsed.name] = parsed
     end
 
     if not primary_field then
@@ -116,6 +142,7 @@ function Table:setup_primary()
     end
 end
 
+---@return integer
 function Table:increment_id()
     self.last_id = self.last_id + 1
     return self.last_id
@@ -127,6 +154,9 @@ function Table:count()
     return vim.tbl_count(self.entries)
 end
 
+---@param row any
+---@return boolean valid
+---@return string | nil reason
 function Table:valid(row)
     if row[self.primary] then
         return false, ("row cannot include primary key '%s'"):format(self.primary)
@@ -154,6 +184,8 @@ function Table:valid(row)
     return true
 end
 
+---@param row any
+---@return boolean unique
 function Table:unique(row)
     for field_name, value in pairs(row) do
         if self.index[field_name] and self.index[field_name][value] then
@@ -163,6 +195,9 @@ function Table:unique(row)
     return true
 end
 
+---@param rows any
+---@param force boolean
+---@return table[] inserted_rows
 function Table:insert(rows, force)
     if vim.tbl_isempty(rows or {}) then
         return {}

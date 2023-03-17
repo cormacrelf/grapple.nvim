@@ -55,19 +55,29 @@ describe("json_tbl", function()
                 parsed = H.parsed_with_id(),
             },
             {
-                desc = "primary-guid",
+                desc = "primary-different-name",
                 schema = { guid = { type = "string", primary = true } },
                 parsed = { guid = { name = "guid", type = "string", primary = true, required = true } },
             },
             {
-                desc = "primary-unique",
+                desc = "primary-from-true",
+                schema = { id = true },
+                parsed = H.parsed_with_id(),
+            },
+            {
+                desc = "primary-overrides-unique",
                 schema = { id = { type = "number", primary = true, unique = true } },
                 parsed = H.parsed_with_id(),
             },
             {
-                desc = "name",
+                desc = "named-field",
                 schema = H.schema_with_id({ deedle = { type = "integer" } }),
                 parsed = H.parsed_with_id({ deedle = { name = "deedle", type = "number" } }),
+            },
+            {
+                desc = "named-field-from-type",
+                schema = H.schema_with_id({ di = "number" }),
+                parsed = H.parsed_with_id({ di = { name = "di", type = "number" } }),
             },
             {
                 desc = "sql-integer",
