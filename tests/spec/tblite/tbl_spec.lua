@@ -665,9 +665,10 @@ describe("json_tbl", function()
                     { name = "rob", age = 50 },
                     { name = "cob", age = 50 },
                 })
-                assert.error(function()
-                    tbl:update(tc.specs)
-                end, tc.error)
+                local rows = tbl:select()
+                -- stylua: ignore
+                assert.error(function() tbl:update(tc.specs) end, tc.error)
+                assert.are.same(rows, H.without_id(tbl:select()))
             end)
         end
     end)
