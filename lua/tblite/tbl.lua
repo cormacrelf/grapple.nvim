@@ -64,9 +64,6 @@ function Table.parse_schema(input_schema)
     end
 
     local function parse_field(name, attributes)
-        -- TODO: allow attributes of the form:
-        -- attributes = true (for primary key)
-        -- attributes = "number" (for basic types)
         if attributes == true then
             attributes = { type = "number", primary = true, required = true }
         elseif type(attributes) ~= "table" then
