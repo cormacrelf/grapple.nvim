@@ -461,7 +461,7 @@ describe("tblite_tbl", function()
         local good_test_cases = {
             {
                 desc = "all-by-nil",
-                where = {},
+                where = nil,
                 after = {},
             },
             {
